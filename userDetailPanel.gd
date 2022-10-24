@@ -1,23 +1,19 @@
 extends Panel
 
-@export var username: String:
-	get:
-		return $UserDetailPanel/Username.text
-	set(username):
-		$UserDetailPanel/Username.text = username
+var default_icon:CompressedTexture2D = load("res://icon.png")
 
-@export var user_icon: Texture2D:
+@export var icon: Texture2D:
 	get:
-		return $UserDetailPanel/UserIcon.texture
+		return %UserIcon.texture
 	set(tex):
-		$UserDetailPanel/UserIcon.texture = tex
+		%UserIcon.texture = tex
 
-#
-#func _init(username = "A"):
-#	$UserDetailPanel/Username.text = username
+@export var user_name: String:
+	get:
+		return %Username.text
+	set(username):
+		%Username.text = username
 
 func _ready():
-	pass
-
-func _process(_delta):
-	pass
+	user_name = "Godot"
+	icon = default_icon

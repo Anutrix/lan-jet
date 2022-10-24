@@ -12,5 +12,10 @@ config_version=5
 
 config/name="Lan-Jet"
 run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.0")
 config/icon="res://icon.png"
-config/features=PackedStringArray("4.0", "Vulkan Clustered")
+
+[filesystem]
+
+import/blender/enabled=false
+import/fbx/enabled=false

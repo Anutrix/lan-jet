@@ -1,20 +1,19 @@
-[gd_scene load_steps=3 format=3 uid="uid://bbbfuw80fyqx7"]
+[gd_scene load_steps=3 format=3 uid="uid://bkoqo0d4pfac5"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_cahjy"]
-[ext_resource type="PackedScene" uid="uid://dpbi0fylictcd" path="res://UserDetailPanel.tscn" id="2_v6wmi"]
+[ext_resource type="PackedScene" uid="uid://cf0vfwbo0i544" path="res://UserDetailPanel.tscn" id="2_v6wmi"]
 
 [node name="Panel" type="Panel"]
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource( "1_cahjy" )
-__meta__ = {
-"_edit_use_custom_anchors": false
-}
+script = ExtResource("1_cahjy")
 
-[node name="UserDetailPanel" parent="." instance=ExtResource( "2_v6wmi" )]
+[node name="UserDetailPanel" parent="." instance=ExtResource("2_v6wmi")]
+anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -160.0
-offset_right = 0.0
+grow_horizontal = 0
