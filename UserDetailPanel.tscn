@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cf0vfwbo0i544"]
+[gd_scene load_steps=3 format=3 uid="uid://cf0vfwbo0i544"]
 
 [ext_resource type="Script" path="res://userDetailPanel.gd" id="1_r4md2"]
+[ext_resource type="Texture2D" uid="uid://de1trh6f4nuod" path="res://icon.png" id="2_pdjwn"]
 
 [node name="UserDetailPanel" type="Panel"]
 offset_right = 160.0
@@ -15,20 +16,17 @@ offset_bottom = 40.0
 [node name="UserIcon" type="TextureRect" parent="HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-offset_right = 39.0
-offset_bottom = 40.0
 size_flags_horizontal = 3
-ignore_texture_size = true
+texture = ExtResource("2_pdjwn")
+expand_mode = 1
 
 [node name="Username" type="Label" parent="HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-offset_left = 43.0
-offset_right = 160.0
-offset_bottom = 40.0
 size_flags_horizontal = 3
 size_flags_vertical = 1
 size_flags_stretch_ratio = 3.0
+text = "Godot"
 horizontal_alignment = 1
 vertical_alignment = 1
 text_overrun_behavior = 3

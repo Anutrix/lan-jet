@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://bkoqo0d4pfac5"]
+[gd_scene load_steps=5 format=3 uid="uid://dq5eil0jvk8fr"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_cahjy"]
 [ext_resource type="PackedScene" uid="uid://cf0vfwbo0i544" path="res://UserDetailPanel.tscn" id="2_v6wmi"]
+[ext_resource type="Script" path="res://webSocketClient.gd" id="3_b0u3v"]
+[ext_resource type="Script" path="res://webSocketServer.gd" id="4_ctcch"]
 
 [node name="Panel" type="Panel"]
 anchors_preset = 15
@@ -12,8 +14,16 @@ grow_vertical = 2
 script = ExtResource("1_cahjy")
 
 [node name="UserDetailPanel" parent="." instance=ExtResource("2_v6wmi")]
+layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -160.0
+offset_right = 0.0
 grow_horizontal = 0
+
+[node name="WebSockerClientNode" type="Node" parent="."]
+script = ExtResource("3_b0u3v")
+
+[node name="WebSocketServerNode" type="Node" parent="."]
+script = ExtResource("4_ctcch")
