@@ -15,11 +15,41 @@ run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.3")
 config/icon="res://icon.png"
 
+[autoload]
+
+NetworkUtils="*res://Autoloads/NetworkUtils.gd"
+
+[debug]
+
+gdscript/warnings/untyped_declaration=1
+gdscript/warnings/inferred_declaration=1
+gdscript/warnings/unsafe_property_access=1
+gdscript/warnings/unsafe_method_access=1
+gdscript/warnings/unsafe_cast=1
+gdscript/warnings/unsafe_call_argument=1
+gdscript/warnings/return_value_discarded=1
+
+[display]
+
+window/size/viewport_width=1024
+window/size/viewport_height=1024
+window/stretch/mode="viewport"
+window/stretch/aspect="expand"
+window/handheld/orientation=6
+
 [dotnet]
 
 project/assembly_name="Lan-Jet"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godottpd/plugin.cfg")
 
 [filesystem]
 
 import/blender/enabled=false
 import/fbx/enabled=false
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true

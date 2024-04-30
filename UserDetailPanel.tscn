@@ -4,14 +4,23 @@
 [ext_resource type="Texture2D" uid="uid://de1trh6f4nuod" path="res://icon.png" id="2_pdjwn"]
 
 [node name="UserDetailPanel" type="Panel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -40.0
 offset_right = 160.0
 offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_r4md2")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 0
-offset_right = 160.0
-offset_bottom = 40.0
+offset_right = 320.0
+offset_bottom = 80.0
 
 [node name="UserIcon" type="TextureRect" parent="HBoxContainer"]
 unique_name_in_owner = true
