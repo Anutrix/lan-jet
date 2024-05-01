@@ -1,0 +1,39 @@
+
+#var mutex: Mutex
+#var threads: Array[Thread] = []
+
+#func testIP(ip: String) -> void:
+	#mutex.lock()
+	#
+	#var output: Array[String] = []
+	#var param: Array[String] = ["/C", "ping",
+		#"-n", "1",
+		#"-w", "1",
+		#"-l", "0",
+		#"-f",
+		#"-i", "2",
+		#"-w", "1",
+		#"-4", ip
+	#]
+	#var exit_code: int = OS.execute("cmd.exe", param, output)
+	#if exit_code == 0 or exit_code == 1:
+		#if len(output) == 1:
+			#var lines: PackedStringArray = output[0].split("\r\n")
+			#var good: bool = true
+			#for line: String in lines:
+				#if "Request timed out" in line:
+					#good = false
+			#if good and ip not in peer_ips:
+				#peer_ips.append(ip)
+		#else:
+			#print("Unexpected response to 'ping' command:", output)
+	#else:
+		#print("Error: Couldn't run ipconfig", exit_code, output)
+	#
+	#mutex.unlock()
+
+## Thread must be disposed (or "joined"), for portability.
+#func _exit_tree():
+	#for thread in threads:
+		#thread.wait_to_finish()
+	#print("Peer IPs: ", peer_ips)

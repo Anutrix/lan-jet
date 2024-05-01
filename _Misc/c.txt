@@ -1,0 +1,46 @@
+
+## Old manual way. Godot's IP class seems enough.
+#func populate_interface_IPv4_addresses() -> void:
+	#self_ips = []
+	#var os_name: String = OS.get_name()
+	#
+	## TODO: Add support for other OSes
+	#if os_name == "Windows" or os_name == "UWP":
+		#var output: Array[String] = []
+		#var exit_code: int = OS.execute("ipconfig", [], output)
+		#if exit_code == 0:
+			#if len(output) == 1:
+				#var lines: PackedStringArray = output[0].split("\r\n")
+				#for line: String in lines:
+					#if "IPv4 Address" in line:
+						#var ip: String = line.split(":")[-1].strip_edges()
+						#if ip not in self_ips:
+							#self_ips.append(ip)
+			#else:
+				#print("Unexpected response to 'ipconfig' command: output=", output)
+		#else:
+			#print("Error: Couldn't run 'ipconfig' command: exitcode=", exit_code, "; output=", output)
+	#elif os_name == "Linux" or os_name == "Android":
+		#var output: Array[String] = []
+		#var exit_code: int = OS.execute("ifconfig", [], output)
+		#if exit_code == 0:
+			#if len(output) == 1:
+				#var lines: PackedStringArray = output[0].split("\r\n")
+				#print(output)
+				#for line: String in lines:
+					#line = line.strip_edges()
+					#if "inet addr:" in line:
+						#var ip: String = line.split(" ")[0]
+						#ip = ip.split("inet addr:")[-1]
+						#if ip not in self_ips:
+							#self_ips.append(ip)
+					#if "inet " in line:
+						#var ip: String = line.split("inet ")[1]
+						#if ip not in self_ips:
+							#self_ips.append(ip)
+			#else:
+				#print("Unexpected response to 'ifconfig' command: output=", output)
+		#else:
+			#print("Error: Couldn't run 'ifconfig' command: exitcode=", exit_code, "; output=", output)
+	#else:
+		#print("Unsupported OS for populateInterfaceIPv4Addresses()")

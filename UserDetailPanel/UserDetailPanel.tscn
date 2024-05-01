@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cf0vfwbo0i544"]
 
-[ext_resource type="Script" path="res://userDetailPanel.gd" id="1_r4md2"]
+[ext_resource type="Script" path="res://UserDetailPanel/UserDetailPanel.gd" id="1_r4md2"]
 [ext_resource type="Texture2D" uid="uid://de1trh6f4nuod" path="res://icon.png" id="2_pdjwn"]
 
 [node name="UserDetailPanel" type="Panel"]

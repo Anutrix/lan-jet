@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3 uid="uid://bn1bb4mtvhb64"]
+
+[ext_resource type="Script" path="res://PeerIPPanel/PeerIPPanel.gd" id="1_iu6a8"]
+
+[node name="PeerIPPanel" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_iu6a8")
+
+[node name="PeerIPHolder" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
