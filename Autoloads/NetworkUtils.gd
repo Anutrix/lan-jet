@@ -3,7 +3,12 @@ extends Node
 var http_requests_holder: Node = null
 
 const LANJET_VERIFICATION_STRING: String = "Lan-Jet is alive!"
+const LANJET_VERIFICATION_FILEPATH: String = "lanjet.txt"
+# Bug on Android export where TextFiles are skipped.
+# lanjet.gd works as workaround for now. Untested.
+# https://github.com/godotengine/godot/issues/91491
 const PEER_REFRESH_TIME_SECONDS: float = 4.0
+const PORT: String = "8888"
 
 var self_ips: PackedStringArray = []
 var peer_ip_states: Dictionary = {}
@@ -61,7 +66,9 @@ func make_get_request(ip: String) -> void:
 	http_requests_holder.add_child(http_request)
 	
 	# Perform a GET request.
-	var error: Error = http_request.request("http://" + ip + ":8080")
+	var url: String = "http://" + ip + ":" + PORT + "/" + LANJET_VERIFICATION_FILEPATH
+	#print(url)
+	var error: Error = http_request.request(url)
 	if error != OK:
 		print("An error occurred in the HTTP request for IP: ", ip)
 		peer_ip_states[ip] = false
@@ -71,7 +78,7 @@ func _http_request_completed(_result: int, _response_code: int, _headers: Packed
 	var resp: String = body.get_string_from_utf8()
 	
 	# Exclude unknown servers
-	if resp == LANJET_VERIFICATION_STRING:
+	if resp.contains(LANJET_VERIFICATION_STRING):
 		peer_ip_states[request_ip] = true
 	else:
 		peer_ip_states[request_ip] = false
