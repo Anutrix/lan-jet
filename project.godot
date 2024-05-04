@@ -17,7 +17,7 @@ config/icon="res://icon.png"
 
 [autoload]
 
-NetworkUtils="*res://Autoloads/NetworkUtils.gd"
+NetworkGlobalState="*res://Autoloads/NetworkGlobalState.gd"
 
 [debug]
 

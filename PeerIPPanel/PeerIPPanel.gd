@@ -10,7 +10,7 @@ func _ready() -> void:
 
 func update_peer_ip_panel() -> void:
 	var current_ip_list: Array[String] = []
-	var latest_peer_ip_states: Dictionary = NetworkUtils.peer_ip_states
+	var latest_peer_ip_states: Dictionary = NetworkGlobalState.peer_ip_states
 	
 	# Remove lost connections
 	for child: Label in peer_ip_holder_node.get_children():

@@ -1,14 +1,15 @@
 extends Node
 
-var bind_port: int = 8888
+var bind_port: int = NetworkGlobalState.PORT
 var bind_ip: String = "0.0.0.0"
-var use_tls: bool = false
+var use_tls: bool = NetworkGlobalState.ENABLE_TLS
 var tls_key: String = ""
 var tls_cert: String = ""
 
 func _ready() -> void:
 	#var old_server: HttpServer = HttpServer.new()
-	#old_server.register_router("/", MainRouter.new())
+	#old_server.port = bind_port
+	#old_server.register_router("/lanjet.txt", MainRouter.new())
 	#add_child(old_server)
 	#old_server.start()
 	

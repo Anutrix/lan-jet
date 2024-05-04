@@ -196,6 +196,8 @@ func _poll() -> void:
 		req_pos += 1
 
 func _send_response() -> void:
+	var response_data_buffer_array: Array[String] = []
+	
 	var data: String = req_buf.get_string_from_utf8()
 	print("\n---Start of Request----")
 	print(data)
@@ -227,13 +229,9 @@ func _send_response() -> void:
 	var filepath: String = cache_path.path_join(req_file)
 
 	if !mimes.has(req_ext) || !FileAccess.file_exists(filepath):
-		var s2: String = "HTTP/1.1 404 Not Found\r\n"
-		s2 += "Connection: Close\r\n"
-		s2 += "\r\n"
-		var cs2: PackedByteArray = s2.to_utf8_buffer()
-		var err2: Error = peer.put_data(cs2)
-		if err2 != OK:
-			print("Error: ", err2)
+		response_data_buffer_array.append("HTTP/1.1 404 Not Found\r\n")
+		response_data_buffer_array.append("Connection: Close\r\n\r\n")
+		_peer_put_data(response_data_buffer_array)
 		return
 	
 	var ctype: String = mimes[req_ext]
@@ -243,28 +241,34 @@ func _send_response() -> void:
 		print("Couldn't access file.")
 		return
 	
-	var s: String = "HTTP/1.1 200 OK\r\n"
-	s += "Connection: Close\r\n"
-	s += "Content-Type: " + ctype + "\r\n"
-	s += "Access-Control-Allow-Origin: *\r\n"
-	s += "Cross-Origin-Opener-Policy: same-origin\r\n"
-	s += "Cross-Origin-Embedder-Policy: require-corp\r\n"
-	s += "Cache-Control: no-store, max-age=0\r\n"
-	s += "\r\n"
-	var cs: PackedByteArray = s.to_utf8_buffer()
-	var err: Error = peer.put_data(cs)
-	if err != OK:
-		print("Error: ", err)
-		return
+	response_data_buffer_array.append("HTTP/1.1 200 OK\r\n")
+	response_data_buffer_array.append("Connection: close\r\n")
+	response_data_buffer_array.append("Content-Type: " + ctype + "\r\n")
+	response_data_buffer_array.append("Access-Control-Allow-Origin: *\r\n")
+	response_data_buffer_array.append("Cross-Origin-Opener-Policy: same-origin\r\n")
+	response_data_buffer_array.append("Cross-Origin-Embedder-Policy: require-corp\r\n")
+	response_data_buffer_array.append("Cache-Control: no-store, max-age=0\r\n")
+	
+	var clen: int = 0
+	
+	#while (true): # Loop is needed for buffer-chunk logic
+	var data_chunk: String = res_file.get_as_text()
+	if data_chunk.is_empty():
+		print("Empty file....")
+		response_data_buffer_array.append("\r\n\r\n")
+	else:
+		clen = data_chunk.length()
+		response_data_buffer_array.append("Content-Length:" + str(clen) + "\r\n\r\n")
+		
+		response_data_buffer_array.append(data_chunk)
 
-	while (true):
-		var data_chunk: PackedByteArray = res_file.get_buffer(4096)
-		if data_chunk.is_empty():
-			return
-		err = peer.put_data(data_chunk)
+	_peer_put_data(response_data_buffer_array)
+
+func _peer_put_data(response_data_buffer_array: Array[String]) -> void:
+	for line in response_data_buffer_array:
+		var err: Error = peer.put_data(line.to_ascii_buffer())
 		if err != OK:
-			print("Error: ", err)
-			return
+			print("Error in peer.put_data: ", err)
 
 func is_listening() -> bool:
 	server_lock.lock()
