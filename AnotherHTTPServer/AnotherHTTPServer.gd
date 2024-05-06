@@ -1,11 +1,16 @@
 # A full HTTP server for Godot
 # Copyright (c) Anutrix(Numan Zaheer Ahmed)
 # MIT License
-# Heavily based on Godot Editor's unexposed HTTP Server
+# Based and inspired from Godot Engine Editor's HTTP Server and GodotTPD
 # Note: Treat this file as Alpha level. Unsure about threads and lock logic too.
 
 extends Node
 class_name AnotherHTTPServer
+
+const SERVER_APP_NAME: String = "AnotherHTTPServer"
+var access_control_origin: String = "*"
+var access_control_allowed_methods: String = "POST, GET, OPTIONS"
+var access_control_allowed_headers: String = "content-type"
 
 var server: TCPServer = null
 var mimes: Dictionary = {}
@@ -22,6 +27,9 @@ var server_quit_flag_set: bool = false
 var server_lock: Mutex = Mutex.new()
 var server_thread: Thread = Thread.new()
 
+var cookie_store: Array[String] = []
+var headers: Dictionary = {}
+
 func _init() -> void:
 	mimes["html"] = "text/html"
 	mimes["js"] = "application/javascript"
@@ -30,8 +38,10 @@ func _init() -> void:
 	mimes["png"] = "image/png"
 	mimes["svg"] = "image/svg"
 	mimes["wasm"] = "application/wasm"
+	
 	mimes["zip"] = "application/octet-stream"
 	mimes["txt"] = "text/html"
+	
 	server = TCPServer.new()
 	stop()
 
@@ -229,9 +239,7 @@ func _send_response() -> void:
 	var filepath: String = cache_path.path_join(req_file)
 
 	if !mimes.has(req_ext) || !FileAccess.file_exists(filepath):
-		response_data_buffer_array.append("HTTP/1.1 404 Not Found\r\n")
-		response_data_buffer_array.append("Connection: Close\r\n\r\n")
-		_peer_put_data(response_data_buffer_array)
+		send(404, "Not Found")
 		return
 	
 	var ctype: String = mimes[req_ext]
@@ -239,36 +247,72 @@ func _send_response() -> void:
 	var res_file: FileAccess = FileAccess.open(filepath, FileAccess.READ)
 	if res_file == null:
 		print("Couldn't access file.")
+		response_data_buffer_array.append("\r\n\r\n")
 		return
 	
-	response_data_buffer_array.append("HTTP/1.1 200 OK\r\n")
-	response_data_buffer_array.append("Connection: close\r\n")
-	response_data_buffer_array.append("Content-Type: " + ctype + "\r\n")
-	response_data_buffer_array.append("Access-Control-Allow-Origin: *\r\n")
-	response_data_buffer_array.append("Cross-Origin-Opener-Policy: same-origin\r\n")
-	response_data_buffer_array.append("Cross-Origin-Embedder-Policy: require-corp\r\n")
-	response_data_buffer_array.append("Cache-Control: no-store, max-age=0\r\n")
-	
-	var clen: int = 0
-	
-	#while (true): # Loop is needed for buffer-chunk logic
-	var data_chunk: String = res_file.get_as_text()
-	if data_chunk.is_empty():
+	var file_content: String = res_file.get_as_text()
+	if file_content.is_empty():
 		print("Empty file....")
-		response_data_buffer_array.append("\r\n\r\n")
-	else:
-		clen = data_chunk.length()
-		response_data_buffer_array.append("Content-Length:" + str(clen) + "\r\n\r\n")
-		
-		response_data_buffer_array.append(data_chunk)
+	
+	send(200, file_content, ctype)
 
+func send(status_code: int, data: String, content_type: String = "text/html") -> void:
+	var response_data_buffer_array: Array[String] = []
+	
+	response_data_buffer_array.append("HTTP/1.1 %d %s\r\n" % [status_code, _match_status_code(status_code)])
+	response_data_buffer_array.append("Server: %s\r\n" % SERVER_APP_NAME)
+	for header: String in headers.keys():
+		response_data_buffer_array.append("%s: %s\r\n" % [header, headers[header]])
+	for cookie: String in cookie_store:
+		response_data_buffer_array.append(("Set-Cookie: %s\r\n" % cookie))
+	response_data_buffer_array.append("Connection: close\r\n")
+	response_data_buffer_array.append("Access-Control-Allow-Origin: %s\r\n" % access_control_origin)
+	response_data_buffer_array.append("Access-Control-Allow-Methods: %s\r\n" % access_control_allowed_methods)
+	response_data_buffer_array.append("Access-Control-Allow-Headers: %s\r\n" % access_control_allowed_headers)
+	response_data_buffer_array.append("Content-Type: %s\r\n" % content_type)
+	response_data_buffer_array.append("Date: %s\r\n" % getDateTimeUTCString())
+	
+	var clen: int = data.length()
+	if clen > 0:
+		response_data_buffer_array.append("Content-Length:" + str(clen) + "\r\n\r\n")
+		response_data_buffer_array.append(data)
+		# Necessary. Fails on Windows to Android HTTP request otherwise.
+		# TODO: Need to support mutually exclusive Transfer-Encoding too
+	else:
+		response_data_buffer_array.append("\r\n\r\n")
+	
 	_peer_put_data(response_data_buffer_array)
 
 func _peer_put_data(response_data_buffer_array: Array[String]) -> void:
-	for line in response_data_buffer_array:
+	for line: String in response_data_buffer_array:
 		var err: Error = peer.put_data(line.to_ascii_buffer())
 		if err != OK:
 			print("Error in peer.put_data: ", err)
+
+func add_cookie(cookie_name: String, cookie_value: String, options: Dictionary = {}) -> void:
+	var cookie: String = cookie_name + "=" + cookie_value
+	
+	if options.has("domain"):
+		cookie += "; Domain=" + options["domain"]
+	if options.has("max-age"):
+		cookie += "; Max-Age=" + options["max-age"]
+	if options.has("expires"):
+		cookie += "; Expires=" + options["expires"]
+	if options.has("path"):
+		cookie += "; Path=" + options["path"]
+	if options.has("secure"):
+		cookie += "; Secure"
+	if options.has("httpOnly"):
+		cookie += "; HttpOnly"
+	if options.has("sameSite"):
+		match (options["sameSite"]):
+			true: cookie += "; SameSite=Strict"
+			"lax": cookie += "; SameSite=Lax"
+			"strict": cookie += "; SameSite=Strict"
+			"none": cookie += "; SameSite=None"
+			_: pass
+	
+	cookie_store.append(cookie)
 
 func is_listening() -> bool:
 	server_lock.lock()
@@ -276,8 +320,89 @@ func is_listening() -> bool:
 	server_lock.unlock()
 	return res
 
-func _ready() -> void:
-	pass
+func _match_status_code(code: int) -> String:
+	var text: String = "OK"
+	match(code):
+		# 1xx - Informational Responses
+		100: text="Continue"
+		101: text="Switching protocols"
+		102: text="Processing"
+		103: text="Early Hints"
+		# 2xx - Successful Responses
+		200: text="OK"
+		201: text="Created"
+		202: text="Accepted"
+		203: text="Non-Authoritative Information"
+		204: text="No Content"
+		205: text="Reset Content"
+		206: text="Partial Content"
+		207: text="Multi-Status"
+		208: text="Already Reported"
+		226: text="IM Used"
+		# 3xx - Redirection Messages
+		300: text="Multiple Choices"
+		301: text="Moved Permanently"
+		302: text="Found (Previously 'Moved Temporarily')"
+		303: text="See Other"
+		304: text="Not Modified"
+		305: text="Use Proxy"
+		306: text="Switch Proxy"
+		307: text="Temporary Redirect"
+		308: text="Permanent Redirect"
+		# 4xx - Client Error Responses
+		400: text="Bad Request"
+		401: text="Unauthorized"
+		402: text="Payment Required"
+		403: text="Forbidden"
+		404: text="Not Found"
+		405: text="Method Not Allowed"
+		406: text="Not Acceptable"
+		407: text="Proxy Authentication Required"
+		408: text="Request Timeout"
+		409: text="Conflict"
+		410: text="Gone"
+		411: text="Length Required"
+		412: text="Precondition Failed"
+		413: text="Payload Too Large"
+		414: text="URI Too Long"
+		415: text="Unsupported Media Type"
+		416: text="Range Not Satisfiable"
+		417: text="Expectation Failed"
+		418: text="I'm a Teapot"
+		421: text="Misdirected Request"
+		422: text="Unprocessable Entity"
+		423: text="Locked"
+		424: text="Failed Dependency"
+		425: text="Too Early"
+		426: text="Upgrade Required"
+		428: text="Precondition Required"
+		429: text="Too Many Requests"
+		431: text="Request Header Fields Too Large"
+		451: text="Unavailable For Legal Reasons"
+		# 5xx - Server Error Responses
+		500: text="Internal Server Error"
+		501: text="Not Implemented"
+		502: text="Bad Gateway"
+		503: text="Service Unavailable"
+		504: text="Gateway Timeout"
+		505: text="HTTP Version Not Supported"
+		506: text="Variant Also Negotiates"
+		507: text="Insufficient Storage"
+		508: text="Loop Detected"
+		510: text="Not Extended"
+		511: text="Network Authentication Required"
+	return text
 
-func _process(_delta: float) -> void:
-	pass
+func getDateTimeUTCString() -> String:
+	const dayOfWeek: Array[String] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+	const monthOfYear: Array[String] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	
+	var dt: Dictionary = Time.get_datetime_dict_from_system(true)
+	dt.weekday = dayOfWeek[dt.weekday]
+	dt.day = "%02d" % dt.day
+	dt.month = monthOfYear[dt.month-1]
+	dt.hour = "%02d" % dt.hour
+	dt.minute = "%02d" % dt.minute
+	dt.second = "%02d" % dt.second
+	var datetime_str: String = "{weekday}, {day} {month} {year} {hour}:{minute}:{second} GMT".format(dt)
+	return datetime_str

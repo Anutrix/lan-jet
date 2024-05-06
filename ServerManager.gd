@@ -19,7 +19,10 @@ func _ready() -> void:
 	var err: Error = server.listen(bind_port, bind_ip, use_tls, tls_key, tls_cert);
 	match err:
 		OK:
-			print("Web Server listening on https://%s:%s" % [bind_ip, bind_port])
+			var protocol_str: String = "http"
+			if use_tls:
+				protocol_str = "https"
+			print("Web Server listening on %s://%s:%s" % [protocol_str, bind_ip, bind_port])
 		ERR_ALREADY_IN_USE:
 			print("Could not bind to port %d, already in use." % bind_port);
 			server.stop()

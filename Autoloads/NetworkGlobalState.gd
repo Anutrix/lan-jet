@@ -1,14 +1,15 @@
 extends Node
 
-var http_requests_holder: Node = null
+const VERBOSE_LOGGING: bool = false
+
+const PORT: int = 8888
+const ENABLE_TLS: bool = true
 
 const LANJET_VERIFICATION_STRING: String = "Lan-Jet is alive!"
 const LANJET_VERIFICATION_FILEPATH: String = "lanjet.txt"
 const REFRESH_WAIT_TIME_SECONDS: float = 4.0
-const VERBOSE_LOGGING: bool = true
 
-const PORT: int = 8888
-const ENABLE_TLS: bool = true
+var http_requests_holder: Node = null
 
 var self_ips: PackedStringArray = []
 var peer_ip_states: Dictionary = {}
@@ -56,7 +57,8 @@ func _make_get_request(ip: String) -> void:
 	var http_request: HTTPRequest = HTTPRequest.new()
 	#http_request.use_threads = true
 	http_request.timeout = 2.0
-	http_request.set_tls_options(TLSOptions.client_unsafe())
+	if ENABLE_TLS:
+		http_request.set_tls_options(TLSOptions.client_unsafe())
 	var connect_err: int = http_request.request_completed.connect(self._http_request_completed.bind(ip, http_request))
 	if connect_err != OK:
 		print("An error occurred in the request_completed signal connection.")

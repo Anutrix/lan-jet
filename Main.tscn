@@ -1,10 +1,11 @@
 [gd_scene load_steps=4 format=3 uid="uid://dq5eil0jvk8fr"]
 
-[ext_resource type="PackedScene" uid="uid://cf0vfwbo0i544" path="res://UserDetailPanel/UserDetailPanel.tscn" id="2_v6wmi"]
+[ext_resource type="PackedScene" uid="uid://bi1xpu4ur5mw5" path="res://UserDetailOverlay/UserDetailOverlay.tscn" id="3_ic4fl"]
 [ext_resource type="Script" path="res://ServerManager.gd" id="3_j6vxg"]
 [ext_resource type="PackedScene" uid="uid://bn1bb4mtvhb64" path="res://PeerIPPanel/PeerIPPanel.tscn" id="3_ov3ew"]
 
-[node name="BasePanel" type="Panel"]
+[node name="Base" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -17,19 +18,9 @@ process_thread_group_order = 0
 process_thread_messages = 0
 script = ExtResource("3_j6vxg")
 
-[node name="UserDetailPanel" parent="." instance=ExtResource("2_v6wmi")]
-layout_mode = 1
-anchors_preset = 5
-anchor_top = 0.0
-anchor_bottom = 0.0
-offset_top = 0.0
-offset_bottom = 80.0
-grow_vertical = 1
-
 [node name="PeerIPPanel" parent="." instance=ExtResource("3_ov3ew")]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+
+[node name="TopCanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="UserDetailOverlay" parent="TopCanvasLayer" instance=ExtResource("3_ic4fl")]

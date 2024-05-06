@@ -1,21 +1,8 @@
-extends Panel
+extends Node
 
 var os_name: String = "Unknown OS"
-
-@onready var iconNode: TextureRect = %UserIcon
-@onready var labelNode: Label = %Username
-
-@export var user_icon: Texture2D:
-	get:
-		return iconNode.texture
-	set(tex):
-		iconNode.texture = tex
-
-@export var user_name: String:
-	get:
-		return labelNode.text
-	set(username):
-		labelNode.text = username
+var user_name: String = "Anonymous"
+var user_icon: Texture2D = load("res://icon.png")
 
 func _ready() -> void:
 	os_name = OS.get_name()
@@ -50,3 +37,4 @@ func _ready() -> void:
 		user_name = OS.get_model_name()
 	else:
 		user_name = "Anonymous(Unknown OS)"
+	pass

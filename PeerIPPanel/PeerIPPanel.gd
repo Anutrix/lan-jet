@@ -1,4 +1,4 @@
-extends Panel
+extends Control
 
 @onready var peer_ip_holder_node: Node = %PeerIPHolder
 
