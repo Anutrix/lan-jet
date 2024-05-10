@@ -8,6 +8,8 @@ extends Node
 class_name AnotherHTTPServer
 
 const SERVER_APP_NAME: String = "AnotherHTTPServer"
+const CHUNK_SIZE: int = 16384
+
 var access_control_origin: String = "*"
 var access_control_allowed_methods: String = "POST, GET, OPTIONS"
 var access_control_allowed_headers: String = "content-type"
@@ -189,9 +191,9 @@ func _poll() -> void:
 			_clear_client()
 			return
 		
-		if (req_pos >= 4096):
-			print("req_pos >= 4096")
-			return
+		#if (req_pos >= 4096):
+			#print("req_pos >= 4096")
+			#return
 		
 		var dat: Array = peer.get_data(1)
 		var err: Error = dat[0]
@@ -274,18 +276,35 @@ func send(status_code: int, data: String, content_type: String = "text/html") ->
 	
 	var clen: int = data.length()
 	if clen > 0:
-		response_data_buffer_array.append("Content-Length:" + str(clen) + "\r\n\r\n")
-		response_data_buffer_array.append(data)
-		# Necessary. Fails on Windows to Android HTTP request otherwise.
-		# TODO: Need to support mutually exclusive Transfer-Encoding too
-	else:
-		response_data_buffer_array.append("\r\n\r\n")
+		if clen < CHUNK_SIZE:
+			response_data_buffer_array.append("Content-Length:" + str(clen) + "\r\n\r\n")
+			response_data_buffer_array.append(data)
+		else:
+			response_data_buffer_array.append("Transfer-Encoding: chunked\r\n\r\n")
+			var curr_pos: int = 0
+			while(curr_pos < clen):
+				var remaining_len: int = clen - curr_pos
+				if remaining_len > CHUNK_SIZE:
+					remaining_len = CHUNK_SIZE
+				
+				var len_in_hex: String = "%X" % remaining_len
+				response_data_buffer_array.append(len_in_hex + "\r\n")
+				
+				response_data_buffer_array.append(data.substr(curr_pos, remaining_len) + "\r\n")
+				
+				curr_pos += CHUNK_SIZE
+		
+			response_data_buffer_array.append("0\r\n\r\n")
+	
+	#print(response_data_buffer_array)
 	
 	_peer_put_data(response_data_buffer_array)
 
 func _peer_put_data(response_data_buffer_array: Array[String]) -> void:
 	for line: String in response_data_buffer_array:
-		var err: Error = peer.put_data(line.to_ascii_buffer())
+		# TODO: Need to fix.
+		var err: Error = peer.put_data(line.to_ascii_buffer()) # Fails to convert certain characters
+		#var err2: Error = peer.put_data(line.to_utf8_buffer()) # Breaks connection after certain size
 		if err != OK:
 			print("Error in peer.put_data: ", err)
 

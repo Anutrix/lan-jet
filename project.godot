@@ -43,10 +43,6 @@ window/handheld/orientation=6
 
 project/assembly_name="Lan-Jet"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/godottpd/plugin.cfg")
-
 [filesystem]
 
 import/blender/enabled=false
