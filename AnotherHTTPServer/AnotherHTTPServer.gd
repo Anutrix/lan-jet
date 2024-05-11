@@ -8,7 +8,7 @@ extends Node
 class_name AnotherHTTPServer
 
 const SERVER_APP_NAME: String = "AnotherHTTPServer"
-const CHUNK_SIZE: int = 16384
+const MAX_CHUNK_SIZE: int = 4096
 
 var access_control_origin: String = "*"
 var access_control_allowed_methods: String = "POST, GET, OPTIONS"
@@ -241,7 +241,8 @@ func _send_response() -> void:
 	var filepath: String = cache_path.path_join(req_file)
 
 	if !mimes.has(req_ext) || !FileAccess.file_exists(filepath):
-		send(404, "Not Found")
+		peer_put_bytes(get_headers(404))
+		send_response_payload("Not Found")
 		return
 	
 	var ctype: String = mimes[req_ext]
@@ -254,59 +255,34 @@ func _send_response() -> void:
 	
 	var file_content: String = res_file.get_as_text()
 	if file_content.is_empty():
-		print("Empty file....")
+		print("Empty file")
+		peer_put_bytes(get_headers(204, ctype))
+		return
 	
-	send(200, file_content, ctype)
+	peer_put_bytes(get_headers(200, ctype))
+	
+	send_response_payload(file_content)
 
-func send(status_code: int, data: String, content_type: String = "text/html") -> void:
-	var response_data_buffer_array: Array[String] = []
-	
-	response_data_buffer_array.append("HTTP/1.1 %d %s\r\n" % [status_code, _match_status_code(status_code)])
-	response_data_buffer_array.append("Server: %s\r\n" % SERVER_APP_NAME)
-	for header: String in headers.keys():
-		response_data_buffer_array.append("%s: %s\r\n" % [header, headers[header]])
-	for cookie: String in cookie_store:
-		response_data_buffer_array.append(("Set-Cookie: %s\r\n" % cookie))
-	response_data_buffer_array.append("Connection: close\r\n")
-	response_data_buffer_array.append("Access-Control-Allow-Origin: %s\r\n" % access_control_origin)
-	response_data_buffer_array.append("Access-Control-Allow-Methods: %s\r\n" % access_control_allowed_methods)
-	response_data_buffer_array.append("Access-Control-Allow-Headers: %s\r\n" % access_control_allowed_headers)
-	response_data_buffer_array.append("Content-Type: %s\r\n" % content_type)
-	response_data_buffer_array.append("Date: %s\r\n" % getDateTimeUTCString())
+func send_response_payload(data: String) -> void:
+	var response_payload: Array[PackedByteArray] = []
 	
 	var clen: int = data.length()
 	if clen > 0:
-		if clen < CHUNK_SIZE:
-			response_data_buffer_array.append("Content-Length:" + str(clen) + "\r\n\r\n")
-			response_data_buffer_array.append(data)
+		if clen < MAX_CHUNK_SIZE:
+			response_payload.append(str_to_bytes("Content-Length:" + str(clen) + "\r\n\r\n"))
+			response_payload.append(str_to_bytes(data))
 		else:
-			response_data_buffer_array.append("Transfer-Encoding: chunked\r\n\r\n")
-			var curr_pos: int = 0
-			while(curr_pos < clen):
-				var remaining_len: int = clen - curr_pos
-				if remaining_len > CHUNK_SIZE:
-					remaining_len = CHUNK_SIZE
-				
-				var len_in_hex: String = "%X" % remaining_len
-				response_data_buffer_array.append(len_in_hex + "\r\n")
-				
-				response_data_buffer_array.append(data.substr(curr_pos, remaining_len) + "\r\n")
-				
-				curr_pos += CHUNK_SIZE
-		
-			response_data_buffer_array.append("0\r\n\r\n")
+			response_payload.append(str_to_bytes("Transfer-Encoding: chunked\r\n\r\n"))
+			response_payload.append_array(str_to_chunks(data))
+			response_payload.append(str_to_bytes("0\r\n\r\n"))
 	
-	#print(response_data_buffer_array)
-	
-	_peer_put_data(response_data_buffer_array)
+	peer_put_bytes(response_payload)
 
-func _peer_put_data(response_data_buffer_array: Array[String]) -> void:
-	for line: String in response_data_buffer_array:
-		# TODO: Need to fix.
-		var err: Error = peer.put_data(line.to_ascii_buffer()) # Fails to convert certain characters
-		#var err2: Error = peer.put_data(line.to_utf8_buffer()) # Breaks connection after certain size
+func peer_put_bytes(response_data_buffer_array: Array[PackedByteArray]) -> void:
+	for item: PackedByteArray in response_data_buffer_array:
+		var err: Error = peer.put_data(item)
 		if err != OK:
-			print("Error in peer.put_data: ", err)
+			print("Error in peer.put_data: ", err, " for: ", item)
 
 func add_cookie(cookie_name: String, cookie_value: String, options: Dictionary = {}) -> void:
 	var cookie: String = cookie_name + "=" + cookie_value
@@ -425,3 +401,52 @@ func getDateTimeUTCString() -> String:
 	dt.second = "%02d" % dt.second
 	var datetime_str: String = "{weekday}, {day} {month} {year} {hour}:{minute}:{second} GMT".format(dt)
 	return datetime_str
+
+func get_headers(status_code: int, content_type: String = "text/html") -> Array[PackedByteArray]:
+	var str_array: Array[String] = []
+	
+	str_array.append("HTTP/1.1 %d %s\r\n" % [status_code, _match_status_code(status_code)])
+	str_array.append("Server: %s\r\n" % SERVER_APP_NAME)
+	for header: String in headers.keys():
+		str_array.append("%s: %s\r\n" % [header, headers[header]])
+	for cookie: String in cookie_store:
+		str_array.append(("Set-Cookie: %s\r\n" % cookie))
+	str_array.append("Connection: close\r\n")
+	str_array.append("Access-Control-Allow-Origin: %s\r\n" % access_control_origin)
+	str_array.append("Access-Control-Allow-Methods: %s\r\n" % access_control_allowed_methods)
+	str_array.append("Access-Control-Allow-Headers: %s\r\n" % access_control_allowed_headers)
+	str_array.append("Content-Type: %s\r\n" % content_type)
+	str_array.append("Date: %s\r\n" % getDateTimeUTCString())
+	
+	# Convert to bytes and return
+	var bytes_array: Array[PackedByteArray] = []
+	for s: String in str_array:
+		bytes_array.append(str_to_bytes(s))
+	
+	return bytes_array
+
+func str_to_bytes(data_str: String) -> PackedByteArray:
+	return data_str.to_utf8_buffer()
+
+func str_to_chunks(data_str: String) -> Array[PackedByteArray]:
+	var data_bytes: PackedByteArray = data_str.to_utf8_buffer()
+	var data_bytes_size: int = data_bytes.size()
+	
+	var chunks: Array[PackedByteArray] = []
+	
+	var curr_pos: int = 0
+	while(curr_pos < data_bytes_size):
+		var remaining_len: int = data_bytes_size - curr_pos
+		if remaining_len > MAX_CHUNK_SIZE:
+			remaining_len = MAX_CHUNK_SIZE
+		
+		var chunk: PackedByteArray = ("%X" % remaining_len).to_utf8_buffer()
+		chunk.append_array("\r\n".to_utf8_buffer())
+		chunk.append_array(data_bytes.slice(curr_pos, curr_pos + remaining_len))
+		chunk.append_array("\r\n".to_utf8_buffer())
+		
+		chunks.append(chunk)
+		
+		curr_pos += MAX_CHUNK_SIZE
+	
+	return chunks

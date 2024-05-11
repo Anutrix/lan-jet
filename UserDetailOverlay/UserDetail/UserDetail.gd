@@ -12,7 +12,7 @@ func _ready() -> void:
 	for ip: String in NetworkGlobalState.self_ips:
 		popupMenu.add_item(ip)
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if !Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		popupMenu.hide()
 		
